@@ -24,15 +24,15 @@ AI-touched and the review discipline that gates each one.
   post-mortem's described bug class; it is NOT a fork of the
   protocol team's production source.
 - **READMEs and case write-ups.** Drafted with AI assistance; reviewed
-  for the rubric at
-  `agents/ai_ops/policies/content_qa_antiaiism_rubric.md`.
+  against CaliperForge's internal anti-AI-ism and register rubric
+  before publish.
 
 ## What is NOT AI-touched
 
 - The published post-mortem URLs themselves (carried as-cited).
 - The CI verdict (pass / fail is a function of the snforge / forge /
   anchor / move run, not the model).
-- The CEO-approved positioning paragraph (README.md "Related work and
+- The operator-approved positioning paragraph (README.md "Related work and
   positioning") — that text is human-locked verbatim across surfaces.
 
 ## Audit trail
