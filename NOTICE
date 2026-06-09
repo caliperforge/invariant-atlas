@@ -1,0 +1,75 @@
+Exploit→Invariant Atlas
+Copyright 2026 CaliperForge / Michael Moffett.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may
+not use this work except in compliance with the License. You may obtain
+a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+
+This NOTICE file is provided for compliance with Section 4(d) of the
+Apache License.
+
+------------------------------------------------------------------------
+Upstream attributions
+------------------------------------------------------------------------
+
+The Atlas explicitly extends a small canon of prior work on
+exploit-to-defense benchmarks. Each case carries the primary
+post-mortem URL in its case README; the upstream benchmarks the
+Atlas connects to are:
+
+- Trace2Inv. Chen et al., "Trace2Inv: Demystifying Invariant-Inducing
+  Bytecode-Level Vulnerabilities of Smart Contracts," FSE 2024.
+  arXiv:2404.14580. 27 historical EVM exploits with paired runtime
+  invariant guards. The Atlas's EVM-bridge case set draws from
+  Trace2Inv's case set with explicit attribution.
+
+- DeFiHackLabs (SunWeb3Sec). 572 historical EVM exploits reproduced
+  as Foundry PoCs. https://github.com/SunWeb3Sec/DeFiHackLabs
+
+- FLAMES. arXiv:2510.21401 (Oct 2025). LLM-synthesized invariants for
+  Solidity, defender-side.
+
+- PropertyGPT. LLM-synthesized property-based testing for Solidity.
+
+The Atlas is differentiated against this canon on three axes (cross-VM
+into non-EVM; pre-deploy CI gate, not runtime guard; tied to runnable
+CaliperForge harnesses) — see README.md "Related work and positioning".
+
+------------------------------------------------------------------------
+Affected protocols (post-mortems cited per case)
+------------------------------------------------------------------------
+
+- zkLend (Feb 2025): BlockSec, Halborn, zkLend Medium incident report.
+- Cetus (May 2025): Dedaub, Halborn, Cyfrin, MerkleScience.
+- Cashio (Mar 2022): Helius "Solana Hacks: A Complete History" entry.
+- Mango Markets (Oct 2022): Helius entry; post-mortems on the
+  Avraham Eisenberg case.
+- Loopscale (Apr 2025): protocol-published post-mortem (case README).
+
+The Atlas reconstructs vulnerable code paths from these published
+post-mortems for the purpose of demonstrating a defender-side
+property test. The reconstructed code is NOT a fork of the protocol
+team's production source; it is a same-source twin minimal to the
+bug class.
+
+------------------------------------------------------------------------
+Toolchain authors
+------------------------------------------------------------------------
+
+- Starknet Foundry (snforge) — Foundry-rs / Swmansion.
+- Scarb — Swmansion.
+- Cairo — Starkware Industries.
+- Foundry (forge) — Foundry-rs.
+- Anchor — Coral-xyz.
+- Sui Move — Mysten Labs.
+
+------------------------------------------------------------------------
+The CaliperForge harnesses this benchmark extends
+------------------------------------------------------------------------
+
+- cf-invariants — Apache-2.0, the snforge-based fuzz-driver framework
+  used by case 1.
+- cf-invariants-anchor, cf-invariants-pyth, cf-invariants-jito ports —
+  Apache-2.0, the Solana harnesses cases 3–5 extend.
+- experiments/cf-invariants-move — the local Move PoC case 2 extends.
+- chimera-template-pack — the EVM Foundry scaffold case 6 extends.

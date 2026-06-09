@@ -1,0 +1,55 @@
+name: Setup Solana (Rust + Anchor lib deps)
+description: >
+  Install pinned stable Rust toolchain + Cargo cache for the Atlas
+  Solana cases. Pins to the rustc version used to verify case 5
+  locally; bumped only alongside a full local re-run of the case's
+  clean + planted legs.
+
+  This action installs ONLY what the Atlas's pure-Rust test rail
+  needs (stable rustc + cargo + Cargo cache). It does NOT install
+  the Solana CLI or cargo-build-sbf. Atlas Solana cases compile
+  their Anchor programs as normal Rust libraries and exercise the
+  pure-logic methods via `cargo test`; the on-chain `.so`
+  toolchain is out of scope for the Atlas's evaluation-rig CI bar.
+
+  A future Solana case that needs the full Crucible / LiteSVM rail
+  (cargo-build-sbf + Anza Solana CLI + sibling crucible clone) can
+  extend this action inline in its own workflow job — see the
+  cf-invariants-jito-tippayment ci.yml in the sibling repo for the
+  shape — rather than clobbering this composite action's lighter
+  shape.
+
+inputs:
+  rust-version:
+    description: 'Rust toolchain version to install (pinned; do not pass "stable")'
+    required: false
+    default: '1.79.0'
+runs:
+  using: composite
+  steps:
+    - name: Install Rust ${{ inputs.rust-version }}
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ inputs.rust-version }}
+        components: clippy
+
+    - name: Cache cargo registry + target
+      uses: Swatinem/rust-cache@v2
+      with:
+        # The Atlas Solana cases live under a per-case Cargo
+        # workspace; the cache action walks each case's
+        # `clean/` and `planted/` workspace when invoked by
+        # the matrix.
+        workspaces: |
+          cases/03-solana-cashio/clean
+          cases/03-solana-cashio/planted
+          cases/04-solana-mango/clean
+          cases/04-solana-mango/planted
+          cases/05-solana-loopscale/clean
+          cases/05-solana-loopscale/planted
+
+    - name: Verify rustc + cargo on PATH
+      shell: bash
+      run: |
+        rustc --version
+        cargo --version

@@ -1,0 +1,34 @@
+name: Setup Cairo (scarb + snforge)
+description: >
+  Install pinned Scarb + Starknet Foundry (snforge) toolchain for the
+  Atlas Cairo cases. Pins to the versions used to verify case 1
+  locally; bumped only alongside a full local re-run of the case's
+  clean + planted legs.
+
+inputs:
+  scarb-version:
+    description: 'Scarb version to install (pinned; do not pass "latest")'
+    required: false
+    default: '2.18.0'
+  snforge-version:
+    description: 'Starknet Foundry version to install (pinned; do not pass "latest")'
+    required: false
+    default: '0.61.0'
+runs:
+  using: composite
+  steps:
+    - name: Install scarb ${{ inputs.scarb-version }}
+      uses: software-mansion/setup-scarb@v1
+      with:
+        scarb-version: ${{ inputs.scarb-version }}
+
+    - name: Install Starknet Foundry (snforge) ${{ inputs.snforge-version }}
+      uses: foundry-rs/setup-snfoundry@v3
+      with:
+        starknet-foundry-version: ${{ inputs.snforge-version }}
+
+    - name: Verify scarb + snforge on PATH
+      shell: bash
+      run: |
+        scarb --version
+        snforge --version

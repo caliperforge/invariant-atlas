@@ -1,0 +1,31 @@
+name: Setup Foundry (forge + forge-std)
+description: >
+  Install Foundry (stable channel) for the Atlas EVM cases. Mirrors the
+  chimera-template-pack convention of tracking Foundry's stable release
+  rather than pinning to a specific nightly — pinning further down risks
+  divergence from the upstream Recon Chimera pattern.
+
+  The forge-std install (pinned to v1.9.4 — matches chimera-template-pack)
+  happens per-case-leg in atlas-all.yml so each case's `lib/forge-std/`
+  is local to the leg's project root and does not bleed across cases.
+
+inputs:
+  forge-std-version:
+    description: 'forge-std version to record (informational; per-leg install in atlas-all.yml)'
+    required: false
+    default: 'v1.9.4'
+runs:
+  using: composite
+  steps:
+    - name: Install Foundry (stable channel)
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: stable
+
+    - name: Verify forge on PATH
+      shell: bash
+      run: |
+        forge --version
+        cast --version
+        anvil --version
+        echo "forge-std pinned to ${{ inputs.forge-std-version }} (installed per-leg in atlas-all.yml)"

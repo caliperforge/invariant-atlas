@@ -1,0 +1,26 @@
+[package]
+name = "cashio-mint-atlas-tests"
+version = "0.1.0"
+edition = "2021"
+description = "Atlas case 3 — LiteSVM invariant tests for the cashio-mint twin."
+license = "Apache-2.0"
+
+# The `programs/cashio-mint` lib target is pulled in for ID +
+# instruction discriminator construction. The crate is NOT built
+# to BPF here; `cargo build-sbf` produces the deployable .so before
+# `cargo test` runs, and LiteSVM loads it via add_program(...).
+[dependencies]
+cashio-mint = { path = "../programs/cashio-mint", features = ["no-entrypoint"] }
+anchor-lang = "=1.0.1"
+# litesvm 0.12 aligns its Pubkey / transaction / signature types with
+# solana 3.x, which is the stack anchor-lang 1.0.1 uses. Older
+# litesvm versions (0.6 / 0.7) pulled in solana-sdk 2.x and produced
+# __Pubkey-vs-Pubkey mismatches against anchor's bundled types.
+litesvm = "0.12"
+solana-keypair = "3"
+solana-signer = "3"
+solana-instruction = "3"
+solana-transaction = "3"
+solana-system-interface = { version = "2", features = ["bincode"] }
+solana-account = "3"
+proptest = "1.5"

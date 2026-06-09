@@ -1,0 +1,55 @@
+name: Setup Sui (sui CLI)
+description: >
+  Install the pinned Sui CLI for the Atlas Move cases. The CLI bundles
+  the `sui move` subcommand set used by `sui move build` and
+  `sui move test`. Pin matches the version used to verify case 2
+  (Cetus) locally; bump only alongside a full local re-run of the
+  case's clean + planted legs.
+inputs:
+  sui-version:
+    description: >
+      Sui CLI release tag to install (mainnet-vX.Y.Z form). Mapped to
+      the matching prebuilt binary on the MystenLabs/sui releases page.
+      Do not pass "latest".
+    required: false
+    default: 'mainnet-v1.40.1'
+runs:
+  using: composite
+  steps:
+    # Prebuilt binary install. We do NOT `cargo install` from source
+    # because the source build pulls a Rust toolchain + ~30 min of
+    # compile, which would push the per-case CI job past its
+    # 25-minute timeout. The prebuilt binary install is the same
+    # path the Sui docs recommend for CI.
+    - name: Install sui ${{ inputs.sui-version }} (prebuilt binary)
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION='${{ inputs.sui-version }}'
+        # MystenLabs publishes ubuntu-x86_64 release archives at
+        # https://github.com/MystenLabs/sui/releases/download/<TAG>/
+        ASSET="sui-${VERSION}-ubuntu-x86_64.tgz"
+        URL="https://github.com/MystenLabs/sui/releases/download/${VERSION}/${ASSET}"
+        TMP="$(mktemp -d)"
+        echo "Downloading ${URL}"
+        curl -fL --retry 3 --retry-delay 5 -o "${TMP}/${ASSET}" "${URL}"
+        tar -xzf "${TMP}/${ASSET}" -C "${TMP}"
+        # The archive's binary layout has varied across releases. Cover
+        # both the flat layout and the `target/release/`-prefixed layout
+        # we've seen on Sui CI release archives.
+        if [ -x "${TMP}/sui" ]; then
+          install -m 0755 "${TMP}/sui" /usr/local/bin/sui
+        elif [ -x "${TMP}/target/release/sui" ]; then
+          install -m 0755 "${TMP}/target/release/sui" /usr/local/bin/sui
+        else
+          echo "::error::sui binary not found in expected paths under ${TMP}"
+          ls -la "${TMP}"
+          [ -d "${TMP}/target/release" ] && ls -la "${TMP}/target/release"
+          exit 1
+        fi
+
+    - name: Verify sui on PATH
+      shell: bash
+      run: |
+        sui --version
+        sui move --help | head -5

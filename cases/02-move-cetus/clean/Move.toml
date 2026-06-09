@@ -1,0 +1,10 @@
+[package]
+name = "cetus_liquidity"
+edition = "2024"
+license = "Apache-2.0"
+authors = ["Michael Moffett <michael@caliperforge.com>"]
+
+[dependencies]
+
+[addresses]
+cetus_liquidity = "0x0"

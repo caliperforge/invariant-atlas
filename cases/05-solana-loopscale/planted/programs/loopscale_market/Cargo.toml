@@ -1,0 +1,32 @@
+[package]
+name = "loopscale_market"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Atlas case 5 — Loopscale (Apr 2025) PT-collateral valuation + borrow twin."
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "loopscale_market"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+test-sbf = []
+
+[dependencies]
+# anchor-lang 1.0.x — same major used by cf-invariants-anchor +
+# the Jito ports. `init-if-needed` is enabled because the
+# `deposit_collateral` instruction lazily opens the position PDA on
+# first deposit; the audit-conventional alternative (separate
+# `open_position` + `add_collateral`) would add an instruction
+# without changing the property surface.
+anchor-lang = { version = "1.0.1", features = ["init-if-needed"] }
+
+[dev-dependencies]
+proptest = "1.5"

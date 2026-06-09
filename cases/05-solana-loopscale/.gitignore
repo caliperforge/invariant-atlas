@@ -1,0 +1,27 @@
+# Atlas case 5 — Solana / Loopscale (Anchor / Cargo).
+#
+# These are the case-local patterns; the top-level
+# experiments/invariant-atlas/.gitignore covers them too. The local
+# copy makes the case dir self-contained and lets a contributor work
+# inside cases/05-solana-loopscale/ without leaning on the parent.
+
+# Cargo build output for both twins.
+clean/target/
+planted/target/
+clean/programs/loopscale_market/target/
+planted/programs/loopscale_market/target/
+
+# Cargo.lock — kept off-tree. The pinned anchor-lang / rustc
+# versions in programs/loopscale_market/Cargo.toml are the
+# reproducibility surface; a committed Cargo.lock fights the pinned
+# toolchain on a dep refresh.
+clean/Cargo.lock
+planted/Cargo.lock
+
+# proptest persists minimal-failing-input regression files alongside
+# the test source. Those are reproducible from the proptest seed and
+# the source, so they stay off-tree.
+**/*.proptest-regressions
+
+# OS junk.
+.DS_Store

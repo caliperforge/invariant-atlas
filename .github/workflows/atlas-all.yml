@@ -1,0 +1,406 @@
+name: atlas-all
+
+# Top-level Atlas CI. Per case, the workflow asserts BOTH legs
+# explicitly (the paired-leg pattern that upgrades cf-invariants'
+# `planted >= 1` single-leg pattern, per the v0.1 spec §4.3):
+#
+#   clean-passes:
+#     - run the case's invariant suite against the CLEAN reference
+#     - assert: zero property violations (within timeout)
+#     - exit code zero AND no `INVARIANT VIOLATED` marker
+#   planted-bug-twin-fails:
+#     - run the same suite against the PLANTED-BUG twin
+#     - assert: ≥1 violation within timeout
+#     - exit code non-zero AND the marker present on stdout
+#
+# The matrix is per-case × per-leg. Every case ships a `clean/` and a
+# `planted/` Scarb project under cases/<n>-<vm>-<protocol>/; the matrix
+# walks every case and asserts both legs in parallel.
+#
+# Pinned toolchain (matches cases/01-cairo-zklend's, case 2's, case
+# 5's, + case 6's READMEs):
+#   - scarb:               2.18.0
+#   - starknet-foundry:    0.61.0  (snforge_std 0.61.0; 0.60.0 also OK)
+#   - sui CLI:             mainnet-v1.40.1
+#   - Move edition:        2024  (pinned in each case's Move.toml)
+#   - foundry:             stable channel (forge-rs/foundry-toolchain@v1)
+#   - forge-std:           v1.9.4 (matches chimera-template-pack pin)
+#   - rust:                1.79.0 (rust-version pinned in each Solana
+#                                  case's program Cargo.toml)
+#   - anchor-lang:         1.0.1 (matches cf-invariants-anchor + the
+#                                  Jito ports' workspace pin)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+  # Reusable: nightly.yml calls this via `uses:`; that needs workflow_call.
+  workflow_call: {}
+
+concurrency:
+  group: atlas-all-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCARB_VERSION: '2.18.0'
+  SNFORGE_VERSION: '0.61.0'
+  SUI_VERSION: 'mainnet-v1.40.1'
+  FORGE_STD_VERSION: 'v1.9.4'
+  # Solana / Anchor (case 5 Loopscale onward). Pinned to the
+  # rust-version declared in each case's program Cargo.toml. Bumped
+  # only alongside a full local re-run of the case's clean +
+  # planted legs.
+  RUST_VERSION: '1.79.0'
+
+jobs:
+  cairo-cases:
+    name: Atlas case (Cairo) — ${{ matrix.case }} / ${{ matrix.leg }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every Cairo case lists itself here. Case 1 (zkLend) is the
+        # template-setter; subsequent Cairo cases (none in v0.1; v0.2
+        # candidates per spec §2.4) append here without restructuring.
+        case:
+          - 01-cairo-zklend
+        leg:
+          - clean
+          - planted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-cairo
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
+          snforge-version: ${{ env.SNFORGE_VERSION }}
+
+      - name: scarb build (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          scarb build
+          ls -l target/dev/
+
+      - name: snforge test (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          set +e
+          mkdir -p "$GITHUB_WORKSPACE/ci-out"
+          OUT="$GITHUB_WORKSPACE/ci-out/${{ matrix.case }}-${{ matrix.leg }}.out"
+          snforge test 2>&1 | tee "$OUT"
+          rc=${PIPESTATUS[0]}
+          set -e
+          MARKER_COUNT=$(grep -c -E 'INVARIANT VIOLATED' "$OUT" || true)
+          if [ "${{ matrix.leg }}" = "planted" ]; then
+            # Planted: rc != 0 AND marker present. Either condition
+            # missing means the planted bug failed to surface or
+            # snforge's exit-code contract changed.
+            if [ "$MARKER_COUNT" -ge 1 ] && [ "$rc" -ne 0 ]; then
+              echo "::notice::${{ matrix.case }} planted leg fired as expected (rc=${rc}, markers=${MARKER_COUNT})."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} planted leg regressed (rc=${rc}, markers=${MARKER_COUNT}); expected rc!=0 AND markers>=1."
+            exit 1
+          else
+            # Clean: rc == 0 AND zero markers. Either an invariant
+            # violation here OR a non-zero rc (compile error, driver
+            # revert, anything else) fails the clean leg loud.
+            if [ "$MARKER_COUNT" -eq 0 ] && [ "$rc" -eq 0 ]; then
+              echo "::notice::${{ matrix.case }} clean leg holds (rc=0, 0 markers)."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} clean leg failed (rc=${rc}, markers=${MARKER_COUNT}); expected rc==0 AND markers==0."
+            exit 1
+          fi
+
+      - name: Upload snforge raw output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snforge-out-${{ matrix.case }}-${{ matrix.leg }}
+          path: ci-out/${{ matrix.case }}-${{ matrix.leg }}.out
+
+  move-cases:
+    name: Atlas case (Move / Sui) — ${{ matrix.case }} / ${{ matrix.leg }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every Move / Sui case lists itself here. Case 2 (Cetus) is the
+        # Move template-setter for the Atlas; subsequent Move cases
+        # append here without restructuring.
+        case:
+          - 02-move-cetus
+        leg:
+          - clean
+          - planted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-sui
+        with:
+          sui-version: ${{ env.SUI_VERSION }}
+
+      - name: sui move build (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          sui move build
+          ls -l build/
+
+      - name: sui move test (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          set +e
+          mkdir -p "$GITHUB_WORKSPACE/ci-out"
+          OUT="$GITHUB_WORKSPACE/ci-out/${{ matrix.case }}-${{ matrix.leg }}.out"
+          sui move test 2>&1 | tee "$OUT"
+          rc=${PIPESTATUS[0]}
+          set -e
+          MARKER_COUNT=$(grep -c -E 'INVARIANT VIOLATED' "$OUT" || true)
+          if [ "${{ matrix.leg }}" = "planted" ]; then
+            # Planted: rc != 0 AND marker present. Either condition
+            # missing means the planted bug failed to surface or the
+            # `sui move test` exit-code contract changed.
+            if [ "$MARKER_COUNT" -ge 1 ] && [ "$rc" -ne 0 ]; then
+              echo "::notice::${{ matrix.case }} planted leg fired as expected (rc=${rc}, markers=${MARKER_COUNT})."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} planted leg regressed (rc=${rc}, markers=${MARKER_COUNT}); expected rc!=0 AND markers>=1."
+            exit 1
+          else
+            # Clean: rc == 0 AND zero markers.
+            if [ "$MARKER_COUNT" -eq 0 ] && [ "$rc" -eq 0 ]; then
+              echo "::notice::${{ matrix.case }} clean leg holds (rc=0, 0 markers)."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} clean leg failed (rc=${rc}, markers=${MARKER_COUNT}); expected rc==0 AND markers==0."
+            exit 1
+          fi
+
+      - name: Upload sui move test raw output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sui-move-out-${{ matrix.case }}-${{ matrix.leg }}
+          path: ci-out/${{ matrix.case }}-${{ matrix.leg }}.out
+
+  evm-cases:
+    name: Atlas case (EVM) — ${{ matrix.case }} / ${{ matrix.leg }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every EVM case lists itself here. Case 6 is the Trace2Inv-bridge
+        # access-control case (the canon hand-shake, NOT a competitive
+        # entry — see cases/06-evm-access-control/README.md §1). The
+        # stretch case C7 (Trace2Inv arithmetic class) appends here if /
+        # when greenlit per spec §3.4.
+        case:
+          - 06-evm-access-control
+        leg:
+          - clean
+          - planted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-foundry
+        with:
+          forge-std-version: ${{ env.FORGE_STD_VERSION }}
+
+      - name: Install forge-std (${{ env.FORGE_STD_VERSION }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          # `--no-git` installs the dep as plain files rather than a git
+          # submodule (each case dir is not its own git root — it's a
+          # subdir of the actions/checkout-cloned tree). This matches the
+          # local-reproduction command in the case README and works under
+          # foundry >= 1.0.
+          forge install foundry-rs/forge-std@${{ env.FORGE_STD_VERSION }} --no-git
+
+      - name: forge build (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          forge build
+          ls -l out/
+
+      - name: forge test (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          set +e
+          mkdir -p "$GITHUB_WORKSPACE/ci-out"
+          OUT="$GITHUB_WORKSPACE/ci-out/${{ matrix.case }}-${{ matrix.leg }}.out"
+          forge test -vv 2>&1 | tee "$OUT"
+          rc=${PIPESTATUS[0]}
+          set -e
+          MARKER_COUNT=$(grep -c -E 'INVARIANT VIOLATED' "$OUT" || true)
+          if [ "${{ matrix.leg }}" = "planted" ]; then
+            # Planted: rc != 0 AND marker present. Either condition
+            # missing means the planted bug failed to surface or
+            # forge's exit-code contract changed.
+            if [ "$MARKER_COUNT" -ge 1 ] && [ "$rc" -ne 0 ]; then
+              echo "::notice::${{ matrix.case }} planted leg fired as expected (rc=${rc}, markers=${MARKER_COUNT})."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} planted leg regressed (rc=${rc}, markers=${MARKER_COUNT}); expected rc!=0 AND markers>=1."
+            exit 1
+          else
+            # Clean: rc == 0 AND zero markers.
+            if [ "$MARKER_COUNT" -eq 0 ] && [ "$rc" -eq 0 ]; then
+              echo "::notice::${{ matrix.case }} clean leg holds (rc=0, 0 markers)."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} clean leg failed (rc=${rc}, markers=${MARKER_COUNT}); expected rc==0 AND markers==0."
+            exit 1
+          fi
+
+      - name: Upload forge raw output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-out-${{ matrix.case }}-${{ matrix.leg }}
+          path: ci-out/${{ matrix.case }}-${{ matrix.leg }}.out
+
+  solana-cases:
+    name: Atlas case (Solana) — ${{ matrix.case }} / ${{ matrix.leg }}
+    runs-on: ubuntu-latest
+    # Anchor-lang + its solana-* transitive crates pull in a wide
+    # dep tree; the cold first build is the slow path (~3 min on
+    # a free-tier runner). 35 min gives headroom; the cache hits on
+    # second-and-later runs cut this to <2 min.
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every Solana case lists itself here. Case 5 (Loopscale) is
+        # the Solana template-setter for the Atlas; case 3 (Cashio)
+        # and case 4 (Mango) append here as they ship. Cases 3-4
+        # extend setup-solana inline if their invariant class needs
+        # the full Crucible / LiteSVM rail (cargo-build-sbf + Anza
+        # Solana CLI + sibling crucible clone); case 4 (Mango) and
+        # case 5 (Loopscale) both use the lighter pure-Rust rail —
+        # see each case's README for the per-case toolchain
+        # rationale.
+        case:
+          - 04-solana-mango
+          - 05-solana-loopscale
+        leg:
+          - clean
+          - planted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-solana
+        with:
+          rust-version: ${{ env.RUST_VERSION }}
+
+      - name: cargo build --release (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          cargo build --release
+          ls -l target/release/
+
+      - name: cargo test --release (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          set +e
+          mkdir -p "$GITHUB_WORKSPACE/ci-out"
+          OUT="$GITHUB_WORKSPACE/ci-out/${{ matrix.case }}-${{ matrix.leg }}.out"
+          cargo test --release 2>&1 | tee "$OUT"
+          rc=${PIPESTATUS[0]}
+          set -e
+          MARKER_COUNT=$(grep -c -E 'INVARIANT VIOLATED' "$OUT" || true)
+          if [ "${{ matrix.leg }}" = "planted" ]; then
+            # Planted: rc != 0 AND marker present. Either condition
+            # missing means the planted bug failed to surface or
+            # cargo's exit-code contract changed.
+            if [ "$MARKER_COUNT" -ge 1 ] && [ "$rc" -ne 0 ]; then
+              echo "::notice::${{ matrix.case }} planted leg fired as expected (rc=${rc}, markers=${MARKER_COUNT})."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} planted leg regressed (rc=${rc}, markers=${MARKER_COUNT}); expected rc!=0 AND markers>=1."
+            exit 1
+          else
+            # Clean: rc == 0 AND zero markers.
+            if [ "$MARKER_COUNT" -eq 0 ] && [ "$rc" -eq 0 ]; then
+              echo "::notice::${{ matrix.case }} clean leg holds (rc=0, 0 markers)."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} clean leg failed (rc=${rc}, markers=${MARKER_COUNT}); expected rc==0 AND markers==0."
+            exit 1
+          fi
+
+      - name: Upload cargo test raw output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-out-${{ matrix.case }}-${{ matrix.leg }}
+          path: ci-out/${{ matrix.case }}-${{ matrix.leg }}.out
+
+  solana-bpf-cases:
+    name: Atlas case (Solana / BPF rail) — ${{ matrix.case }} / ${{ matrix.leg }}
+    runs-on: ubuntu-latest
+    # cargo-build-sbf compile + the LiteSVM test stack is heavier than
+    # the pure-Rust rail; 45 min covers a cold first-run with no cache.
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Solana cases whose invariant class needs the actual on-chain
+        # account-validation behavior — they compile the Anchor program
+        # to BPF via cargo-build-sbf and load the .so into LiteSVM at
+        # test time. Case 3 (Cashio) is the load-bearing example: the
+        # bug class IS Anchor's `Accounts` macro constraint-check
+        # behavior, which is only faithfully exercised through the
+        # actual program-runtime dispatch.
+        case:
+          - 03-solana-cashio
+        leg:
+          - clean
+          - planted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-solana-bpf
+        with:
+          solana-version: 'stable'
+
+      - name: cargo build-sbf (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          cargo build-sbf --manifest-path programs/cashio-mint/Cargo.toml
+          ls -l target/deploy/
+
+      - name: cargo test (${{ matrix.case }} / ${{ matrix.leg }})
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          set +e
+          mkdir -p "$GITHUB_WORKSPACE/ci-out"
+          OUT="$GITHUB_WORKSPACE/ci-out/${{ matrix.case }}-${{ matrix.leg }}.out"
+          cargo test --manifest-path tests/Cargo.toml -- --nocapture 2>&1 | tee "$OUT"
+          rc=${PIPESTATUS[0]}
+          set -e
+          MARKER_COUNT=$(grep -c -E 'INVARIANT VIOLATED' "$OUT" || true)
+          if [ "${{ matrix.leg }}" = "planted" ]; then
+            # Planted: rc != 0 AND marker present.
+            if [ "$MARKER_COUNT" -ge 1 ] && [ "$rc" -ne 0 ]; then
+              echo "::notice::${{ matrix.case }} planted leg fired as expected (rc=${rc}, markers=${MARKER_COUNT})."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} planted leg regressed (rc=${rc}, markers=${MARKER_COUNT}); expected rc!=0 AND markers>=1."
+            exit 1
+          else
+            # Clean: rc == 0 AND zero markers.
+            if [ "$MARKER_COUNT" -eq 0 ] && [ "$rc" -eq 0 ]; then
+              echo "::notice::${{ matrix.case }} clean leg holds (rc=0, 0 markers)."
+              exit 0
+            fi
+            echo "::error::${{ matrix.case }} clean leg failed (rc=${rc}, markers=${MARKER_COUNT}); expected rc==0 AND markers==0."
+            exit 1
+          fi
+
+      - name: Upload cargo test raw output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-sbf-out-${{ matrix.case }}-${{ matrix.leg }}
+          path: ci-out/${{ matrix.case }}-${{ matrix.leg }}.out

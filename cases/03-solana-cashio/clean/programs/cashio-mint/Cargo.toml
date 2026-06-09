@@ -1,0 +1,28 @@
+[package]
+name = "cashio-mint"
+version = "0.1.0"
+edition = "2021"
+description = "Atlas case 3 — minimal Anchor program of the Cashio mint-against-collateral path (CLEAN twin)."
+license = "Apache-2.0"
+
+# cdylib so `cargo build-sbf` emits a deployable .so; lib so the
+# integration test crate can pull `ID` + the instruction / accounts
+# structs in for hand-rolled ix construction.
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "cashio_mint"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+# Pinned to anchor-lang 1.0.1 to match the cf-invariants-anchor /
+# cf-invariants-pyth / cf-invariants-jito stack — same Crucible v0.2.0
+# tracks this lockstep. anchor-spl 1.0.1 provides the SPL TokenAccount
+# wrapper used by the planted bug class.
+[dependencies]
+anchor-lang = "=1.0.1"
+anchor-spl = { version = "=1.0.1", features = ["token"] }

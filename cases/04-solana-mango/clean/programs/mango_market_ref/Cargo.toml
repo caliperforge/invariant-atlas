@@ -1,0 +1,27 @@
+[package]
+name = "mango_market_ref"
+version = "0.1.0"
+edition = "2021"
+description = "Atlas case 4 reference: minimal Anchor mango-class oracle-priced collateral-and-borrow program. Clean twin enforces freshness + deviation-vs-TWAP + min(spot, twap) floor on the borrow-power gate."
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "mango_market_ref"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+test-sbf = []
+
+[dependencies]
+# Pinned to anchor-lang 1.0.1 to match the cf-invariants-anchor
+# reference workspace (anchor-lang 1.0.1 / Crucible v0.2.0 pair). The
+# Atlas case 4 tests drive the same `compute_max_borrow` pure-function
+# the on-chain `borrow` handler dispatches to, so the property surface
+# is exercised at the function-grain without requiring the SBF target.
+anchor-lang = "1.0.1"

@@ -1,0 +1,56 @@
+# Cairo / Starknet build artifacts. Each case's clean/ and planted/
+# directory is a full Scarb project; running `scarb build` and
+# `snforge test` locally produces target/ and .snfoundry_cache/ under
+# the case dir. NEVER commit these — CI rebuilds from source on every
+# push, and committed artifacts decay against the pinned toolchain.
+**/target/
+**/target/dev/
+**/target/release/
+**/target/CACHEDIR.TAG
+**/.snfoundry_cache/
+
+# Scarb lockfile. Not committed in the cf-invariants references and
+# kept off-tree here for the same reason — the pinned scarb / snforge
+# versions in each case's Scarb.toml are the reproducibility surface,
+# and a stale Scarb.lock fights the pinned toolchain on dep refresh.
+**/Scarb.lock
+
+# EVM (Foundry) build artifacts. Each case's clean/ and planted/ is a full
+# Foundry project; running `forge build` and `forge test` locally produces
+# out/, cache/, and (via `forge install`) lib/ under the case dir. NEVER
+# commit these — CI re-installs forge-std + rebuilds from source on every
+# push, and committed artifacts decay against the pinned toolchain.
+**/out/
+**/cache/
+**/lib/
+**/broadcast/
+
+# Move / Sui build artifacts. Each Move case's clean/ and planted/ is a
+# full Sui Move package; running `sui move build` and `sui move test`
+# locally produces build/ and Move.lock under the case dir. Same
+# rationale — CI rebuilds from source on every push, and committed
+# artifacts decay against the pinned sui CLI.
+**/build/
+**/Move.lock
+
+# Solana / Anchor (Cargo) build artifacts. Each Solana case's clean/
+# and planted/ is a Cargo workspace; running `cargo test` locally
+# produces target/ and Cargo.lock under the case dir. NEVER commit
+# these — CI rebuilds from source on every push, and committed
+# artifacts decay against the pinned rustc / anchor-lang versions in
+# the program Cargo.toml. proptest persists minimal-failing-input
+# regression files alongside the test source; those are reproducible
+# from the proptest seed and the source, so they stay off-tree.
+**/Cargo.lock
+**/*.proptest-regressions
+
+# Secrets — same envelope as cf-invariants.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS junk.
+.DS_Store
+**/.DS_Store

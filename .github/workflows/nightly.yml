@@ -1,0 +1,25 @@
+name: atlas-nightly
+
+# Nightly cron that runs the full Atlas matrix against the latest
+# released toolchain (scarb / snforge / anchor / foundry / move). The
+# point is the badge: an upstream release that breaks a case surfaces
+# as a red nightly the morning it lands, not when the next contributor
+# stumbles on it. The badge on each case README links here.
+#
+# Per v0.1 spec §4.3: nightly cron is part of what distinguishes an
+# operationally-maintained benchmark from a publish-once academic
+# artifact.
+
+on:
+  schedule:
+    - cron: '17 7 * * *'    # 07:17 UTC daily — off-peak
+  workflow_dispatch: {}
+
+jobs:
+  call-atlas-all:
+    name: Nightly re-run of Atlas matrix
+    # Reuses the pinned-toolchain matrix from atlas-all.yml; failure
+    # here on the same pin as a green push run yesterday indicates an
+    # upstream-action / runner-image regression — not a real Atlas
+    # regression.
+    uses: ./.github/workflows/atlas-all.yml

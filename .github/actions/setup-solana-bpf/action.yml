@@ -1,0 +1,63 @@
+name: Setup Solana (BPF rail — solana-cli + cargo-build-sbf)
+description: >
+  Install pinned solana-cli (Agave channel, including platform-tools
+  + cargo-build-sbf) for the Atlas Solana cases that compile their
+  Anchor programs to BPF and load the .so via LiteSVM.
+
+  This is the heavier-rail sibling of `setup-solana`: where the
+  lighter `setup-solana` action installs only stable rustc + cargo
+  cache for cases that exercise Anchor programs as a plain Rust
+  library, this action additionally installs the Anza Solana CLI so
+  that `cargo build-sbf` is available and the program can be
+  compiled to a deployable `.so` for in-process LiteSVM testing.
+
+  Case 3 (Cashio) uses this rail because the load-bearing bug class
+  is Anchor's `Accounts` macro constraint-check behavior — the only
+  faithful way to exercise it is to run the actual program bytes
+  inside LiteSVM, not the library-mode handler function.
+
+inputs:
+  solana-version:
+    description: >
+      Solana CLI release tag (e.g. 'stable', '4.0.1'). Default
+      tracks the version used to verify case 3 locally on 2026-06-08.
+    required: false
+    default: 'stable'
+  rust-version:
+    description: 'Host Rust toolchain (for the test crate)'
+    required: false
+    default: 'stable'
+runs:
+  using: composite
+  steps:
+    - name: Install host Rust ${{ inputs.rust-version }}
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ inputs.rust-version }}
+
+    - name: Install solana-cli (${{ inputs.solana-version }})
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Anza/Agave install — supersedes the legacy
+        # release.solana.com endpoint. The script writes to
+        # ${HOME}/.local/share/solana/install/active_release/bin/.
+        # `stable` resolves to the current Agave stable; pin to an
+        # explicit version string for a frozen toolchain.
+        sh -c "$(curl -sSfL https://release.anza.xyz/${{ inputs.solana-version }}/install)"
+        echo "${HOME}/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+    - name: Cache cargo registry + per-case target dirs
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          cases/03-solana-cashio/clean
+          cases/03-solana-cashio/planted
+
+    - name: Verify solana-cli + cargo-build-sbf + rustc on PATH
+      shell: bash
+      run: |
+        set -euo pipefail
+        solana --version
+        cargo-build-sbf --version
+        rustc --version
