@@ -21,12 +21,12 @@ name: atlas-all
 # 5's, + case 6's READMEs):
 #   - scarb:               2.18.0
 #   - starknet-foundry:    0.61.0  (snforge_std 0.61.0; 0.60.0 also OK)
-#   - sui CLI:             mainnet-v1.40.1
+#   - sui CLI:             mainnet-v1.72.5
 #   - Move edition:        2024  (pinned in each case's Move.toml)
 #   - foundry:             stable channel (forge-rs/foundry-toolchain@v1)
 #   - forge-std:           v1.9.4 (matches chimera-template-pack pin)
-#   - rust:                1.79.0 (rust-version pinned in each Solana
-#                                  case's program Cargo.toml)
+#   - rust:                1.85.0 (first stable w/ edition-2024; bumped
+#                                  from 1.79.0 — transitive deps require it)
 #   - anchor-lang:         1.0.1 (matches cf-invariants-anchor + the
 #                                  Jito ports' workspace pin)
 
@@ -46,13 +46,12 @@ concurrency:
 env:
   SCARB_VERSION: '2.18.0'
   SNFORGE_VERSION: '0.61.0'
-  SUI_VERSION: 'mainnet-v1.40.1'
+  SUI_VERSION: 'mainnet-v1.72.5'
   FORGE_STD_VERSION: 'v1.9.4'
-  # Solana / Anchor (case 5 Loopscale onward). Pinned to the
-  # rust-version declared in each case's program Cargo.toml. Bumped
-  # only alongside a full local re-run of the case's clean +
-  # planted legs.
-  RUST_VERSION: '1.79.0'
+  # Solana / Anchor (case 5 Loopscale onward). Bumped to 1.85.0
+  # (from 1.79.0) to support edition-2024 in transitive deps. Bump
+  # only alongside a full local re-run of the case's clean + planted legs.
+  RUST_VERSION: '1.85.0'
 
 jobs:
   cairo-cases:

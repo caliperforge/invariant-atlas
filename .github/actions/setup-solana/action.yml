@@ -23,7 +23,7 @@ inputs:
   rust-version:
     description: 'Rust toolchain version to install (pinned; do not pass "stable")'
     required: false
-    default: '1.79.0'
+    default: '1.85.0'
 runs:
   using: composite
   steps:

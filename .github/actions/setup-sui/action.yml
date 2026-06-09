@@ -12,7 +12,7 @@ inputs:
       the matching prebuilt binary on the MystenLabs/sui releases page.
       Do not pass "latest".
     required: false
-    default: 'mainnet-v1.40.1'
+    default: 'mainnet-v1.72.5'
 runs:
   using: composite
   steps:
