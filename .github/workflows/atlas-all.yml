@@ -38,6 +38,11 @@ on:
   workflow_dispatch: {}
   # Reusable: nightly.yml calls this via `uses:`; that needs workflow_call.
   workflow_call: {}
+  schedule:
+    # Weekly maintenance probe. A green badge here means "passes on
+    # today's toolchain", not "passed when we last pushed". Staggered
+    # across the public fleet to avoid hammering the GHA runner pool.
+    - cron: '21 6 * * 1'
 
 concurrency:
   group: atlas-all-${{ github.ref }}
