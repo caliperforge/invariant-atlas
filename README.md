@@ -10,6 +10,9 @@ have* caught the bug class on the pre-exploit code under CI run.
 EVM, each with both CI legs asserted (clean passes / planted fires). The
 [`v4-hooks/`](v4-hooks/) subdir (Uniswap Foundation Security grant lane, three
 hook-class invariants H1/H2/H3) is also in the matrix as `v4-hooks-cases`.
+The [`taiko/`](taiko/) subdir (Taiko Labs grant lane, three Type-1
+Ethereum-equivalence twins — PrecompileMirror / GasSchedule / BasedSequencer)
+is also in the matrix as `taiko-cases`.
 
 ---
 

@@ -1,5 +1,7 @@
 # Taiko Equivalence Subdir - Planted-Twin Atlas
 
+[![atlas-all](https://github.com/caliperforge/invariant-atlas/actions/workflows/atlas-all.yml/badge.svg?branch=main)](https://github.com/caliperforge/invariant-atlas/actions/workflows/atlas-all.yml?query=branch%3Amain)
+
 Planted-twin invariant cases for **Taiko's Type-1 Ethereum-equivalence**
 priority, plus a **differential Foundry harness** that runs the same input
 against a canonical L1 reference fixture and the Taiko execution-layer
@@ -7,6 +9,15 @@ mirror under test, then asserts byte-equivalence.
 
 Three illustrative cases ship in v0.1. The atlas scales post-grant; the
 cases here are the existence proof, not the exhaustive catalogue.
+
+**Live CI:** the badge above tracks the atlas-all workflow on `main`,
+which runs the taiko/ clean leg (asserts `rc==0` AND zero `INVARIANT
+VIOLATED` markers) and the planted leg (asserts `rc!=0` AND
+markers `>=1`) on every push and weekly on Monday at 06:21 UTC. The
+toolchain pin (Foundry v1.7.1 + forge-std v1.9.4) matches the §4b
+code-quality review capture: clean 6/6 pass, planted 1/5 with the
+warm-SLOAD test correctly staying green (single-localized-hunk
+discipline — only cold SLOAD was mutated).
 
 ## Why these cases
 

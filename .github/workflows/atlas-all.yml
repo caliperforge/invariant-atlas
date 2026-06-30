@@ -355,6 +355,96 @@ jobs:
           name: forge-out-v4-hooks-${{ matrix.leg }}
           path: ci-out/v4-hooks-${{ matrix.leg }}.out
 
+  taiko-cases:
+    # Taiko Type-1 Ethereum-equivalence twins. Same paired-leg pattern
+    # as evm-cases / v4-hooks-cases above (clean: rc==0 AND zero markers;
+    # planted: rc!=0 AND markers>=1). The taiko planted suite has 1 test
+    # that passes (warm-SLOAD — only the cold-SLOAD constant was mutated,
+    # demonstrating single-localized-hunk discipline) alongside 5 that
+    # fail with the INVARIANT VIOLATED marker, so the suite-level rule
+    # still holds. Lives outside the cases/ matrix because taiko/ is a
+    # subdir-scoped lane (Taiko Labs grant track), not a numbered Atlas
+    # case.
+    #
+    # Foundry pinned to v1.7.1 here — same pin as v4-hooks-cases. The
+    # §4b code-quality review (2026-06-28) was captured on this toolchain
+    # (6/6 clean, 1/5 planted with markers); the pin keeps the live badge
+    # a faithful re-verification of the §4b receipt rather than a
+    # moving-target stable-channel claim. Shared setup-foundry composite
+    # for cases 06+ stays on `stable`.
+    name: Atlas taiko — ${{ matrix.leg }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        leg:
+          - clean
+          - planted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Foundry (v1.7.1, scorecard pin)
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
+
+      - name: Verify forge on PATH
+        run: |
+          forge --version
+          cast --version
+
+      - name: Install forge-std (${{ env.FORGE_STD_VERSION }})
+        working-directory: taiko/${{ matrix.leg }}
+        run: |
+          # Same `--no-git` install convention as the cases/ EVM jobs;
+          # the leg dir is not its own git root.
+          forge install foundry-rs/forge-std@${{ env.FORGE_STD_VERSION }} --no-git
+
+      - name: forge build (taiko / ${{ matrix.leg }})
+        working-directory: taiko/${{ matrix.leg }}
+        run: |
+          forge build
+          ls -l out/
+
+      - name: forge test (taiko / ${{ matrix.leg }})
+        working-directory: taiko/${{ matrix.leg }}
+        run: |
+          set +e
+          mkdir -p "$GITHUB_WORKSPACE/ci-out"
+          OUT="$GITHUB_WORKSPACE/ci-out/taiko-${{ matrix.leg }}.out"
+          forge test -vv 2>&1 | tee "$OUT"
+          rc=${PIPESTATUS[0]}
+          set -e
+          MARKER_COUNT=$(grep -c -E 'INVARIANT VIOLATED' "$OUT" || true)
+          if [ "${{ matrix.leg }}" = "planted" ]; then
+            # Planted: rc != 0 AND marker present. §4b receipt says 5/6
+            # tests fail and each failure carries the marker; the warm-
+            # SLOAD test passes alongside them (single-hunk discipline —
+            # only cold SLOAD was mutated) but the suite-level rc is
+            # still non-zero, which is what we check here.
+            if [ "$MARKER_COUNT" -ge 1 ] && [ "$rc" -ne 0 ]; then
+              echo "::notice::taiko planted leg fired as expected (rc=${rc}, markers=${MARKER_COUNT})."
+              exit 0
+            fi
+            echo "::error::taiko planted leg regressed (rc=${rc}, markers=${MARKER_COUNT}); expected rc!=0 AND markers>=1."
+            exit 1
+          else
+            # Clean: rc == 0 AND zero markers.
+            if [ "$MARKER_COUNT" -eq 0 ] && [ "$rc" -eq 0 ]; then
+              echo "::notice::taiko clean leg holds (rc=0, 0 markers)."
+              exit 0
+            fi
+            echo "::error::taiko clean leg failed (rc=${rc}, markers=${MARKER_COUNT}); expected rc==0 AND markers==0."
+            exit 1
+          fi
+
+      - name: Upload forge raw output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-out-taiko-${{ matrix.leg }}
+          path: ci-out/taiko-${{ matrix.leg }}.out
+
   solana-cases:
     name: Atlas case (Solana) — ${{ matrix.case }} / ${{ matrix.leg }}
     runs-on: ubuntu-latest
