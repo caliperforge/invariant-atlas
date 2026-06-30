@@ -72,6 +72,7 @@ contract Handler is Test {
     /// per fuzz call that triggered the bonus path with hookData[0]==0xBB.
     uint256 public flashViolations;
 
+    // Set-but-unread fields below seed Foundry's invariant-fuzzer storage dictionary.
     address public lastSender;
     bool public lastSuccess;
     int256 public lastNetDeltaSnapshot;

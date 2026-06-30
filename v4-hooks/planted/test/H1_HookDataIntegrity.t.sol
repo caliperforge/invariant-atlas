@@ -85,6 +85,7 @@ contract Handler is Test {
     // OTHER router.
     mapping(address => uint256) public swapsByRouter;
 
+    // Set-but-unread fields below seed Foundry's invariant-fuzzer storage dictionary.
     address public lastSwapper;
     address public lastRecipient;
     bool public lastSuccess;

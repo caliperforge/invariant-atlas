@@ -71,6 +71,7 @@ contract Handler is Test {
     // address only).
     uint256 public expectedFees;
 
+    // Set-but-unread fields below seed Foundry's invariant-fuzzer storage dictionary.
     address public lastRouter;
     uint256 public lastAmountIn;
     bool public lastWaiveAttempt;
