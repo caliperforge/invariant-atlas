@@ -1,11 +1,15 @@
 # Exploit→Invariant Atlas (v0.1)
 
+[![atlas-all](https://github.com/caliperforge/invariant-atlas/actions/workflows/atlas-all.yml/badge.svg?branch=main)](https://github.com/caliperforge/invariant-atlas/actions/workflows/atlas-all.yml?query=branch%3Amain)
+
 A cross-VM, defender-side, pre-deploy CI benchmark: for each historical exploit,
 a runnable invariant property and a same-source twin where the property *would
 have* caught the bug class on the pre-exploit code under CI run.
 
 **Status:** v0.1 shipped — all six cases land across Cairo, Move, Solana, and
-EVM, each with both CI legs asserted (clean passes / planted fires).
+EVM, each with both CI legs asserted (clean passes / planted fires). The
+[`v4-hooks/`](v4-hooks/) subdir (Uniswap Foundation Security grant lane, three
+hook-class invariants H1/H2/H3) is also in the matrix as `v4-hooks-cases`.
 
 ---
 

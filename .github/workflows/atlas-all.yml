@@ -266,6 +266,95 @@ jobs:
           name: forge-out-${{ matrix.case }}-${{ matrix.leg }}
           path: ci-out/${{ matrix.case }}-${{ matrix.leg }}.out
 
+  v4-hooks-cases:
+    # Uniswap v4 hook-class invariants. Same paired-leg pattern as
+    # evm-cases above (clean: rc==0 AND zero markers; planted: rc!=0
+    # AND markers>=1) — the v4-hooks planted suite has 3 unit tests
+    # that pass alongside 6 invariant+attack tests that fail with
+    # the INVARIANT VIOLATED marker, so the suite-level rule still
+    # holds. Lives outside the cases/ matrix because v4-hooks/ is a
+    # subdir-scoped lane (Uniswap Foundation Security grant track),
+    # not a numbered Atlas case.
+    #
+    # Foundry pinned to v1.7.1 here — the exact toolchain on which
+    # scorecard.clean.md (9 pass / 0 fail) and scorecard.planted.md
+    # (3 pass / 6 fail, all six carrying INVARIANT VIOLATED) were
+    # captured. The shared setup-foundry composite tracks `stable`
+    # for cases 06+; v4-hooks holds to the scorecard pin so the live
+    # badge stays a faithful re-verification of the published
+    # scorecard rather than a moving-target stable-channel claim.
+    name: Atlas v4-hooks — ${{ matrix.leg }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        leg:
+          - clean
+          - planted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Foundry (v1.7.1, scorecard pin)
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
+
+      - name: Verify forge on PATH
+        run: |
+          forge --version
+          cast --version
+
+      - name: Install forge-std (${{ env.FORGE_STD_VERSION }})
+        working-directory: v4-hooks/${{ matrix.leg }}
+        run: |
+          # Same `--no-git` install convention as the cases/ EVM jobs;
+          # the leg dir is not its own git root.
+          forge install foundry-rs/forge-std@${{ env.FORGE_STD_VERSION }} --no-git
+
+      - name: forge build (v4-hooks / ${{ matrix.leg }})
+        working-directory: v4-hooks/${{ matrix.leg }}
+        run: |
+          forge build
+          ls -l out/
+
+      - name: forge test (v4-hooks / ${{ matrix.leg }})
+        working-directory: v4-hooks/${{ matrix.leg }}
+        run: |
+          set +e
+          mkdir -p "$GITHUB_WORKSPACE/ci-out"
+          OUT="$GITHUB_WORKSPACE/ci-out/v4-hooks-${{ matrix.leg }}.out"
+          forge test -vv 2>&1 | tee "$OUT"
+          rc=${PIPESTATUS[0]}
+          set -e
+          MARKER_COUNT=$(grep -c -E 'INVARIANT VIOLATED' "$OUT" || true)
+          if [ "${{ matrix.leg }}" = "planted" ]; then
+            # Planted: rc != 0 AND marker present. Scorecard says 6/9
+            # tests fail and each failure carries the marker; the 3
+            # unit tests pass alongside them but the suite-level rc
+            # is still non-zero, which is what we check here.
+            if [ "$MARKER_COUNT" -ge 1 ] && [ "$rc" -ne 0 ]; then
+              echo "::notice::v4-hooks planted leg fired as expected (rc=${rc}, markers=${MARKER_COUNT})."
+              exit 0
+            fi
+            echo "::error::v4-hooks planted leg regressed (rc=${rc}, markers=${MARKER_COUNT}); expected rc!=0 AND markers>=1."
+            exit 1
+          else
+            # Clean: rc == 0 AND zero markers.
+            if [ "$MARKER_COUNT" -eq 0 ] && [ "$rc" -eq 0 ]; then
+              echo "::notice::v4-hooks clean leg holds (rc=0, 0 markers)."
+              exit 0
+            fi
+            echo "::error::v4-hooks clean leg failed (rc=${rc}, markers=${MARKER_COUNT}); expected rc==0 AND markers==0."
+            exit 1
+          fi
+
+      - name: Upload forge raw output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-out-v4-hooks-${{ matrix.leg }}
+          path: ci-out/v4-hooks-${{ matrix.leg }}.out
+
   solana-cases:
     name: Atlas case (Solana) — ${{ matrix.case }} / ${{ matrix.leg }}
     runs-on: ubuntu-latest

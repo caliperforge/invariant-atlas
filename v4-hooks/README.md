@@ -1,9 +1,20 @@
 # Atlas v4-hooks subdir (v0.1)
 
+[![atlas-all](https://github.com/caliperforge/invariant-atlas/actions/workflows/atlas-all.yml/badge.svg?branch=main)](https://github.com/caliperforge/invariant-atlas/actions/workflows/atlas-all.yml?query=branch%3Amain)
+
 Pre-deploy, Foundry-stateful invariant cases against the Uniswap v4
 hook surface. Built for the Uniswap Foundation Security grant lane:
 three planted-twin cases that demonstrate the property class catching
 the bug class on the planted twin and holding on the clean twin.
+
+The badge above tracks the full `atlas-all` workflow, which includes
+the `v4-hooks-cases` jobs (clean + planted legs). Green means: the
+clean leg's 9 tests all pass on the pinned toolchain (Foundry v1.7.1
++ forge-std v1.9.4), AND the planted leg's three invariant + three
+attack-sequence tests all fail with the `INVARIANT VIOLATED` marker
+exactly as `scorecard.planted.md` records, AND every other Atlas
+case still holds. The badge re-verifies the published scorecard on
+every push to `main` and on the weekly scheduled run.
 
 The cases are **illustrative, not exhaustive**. v0.1 ships the three
 classes the v4-hook audit canon flags as recurring. The atlas scales
