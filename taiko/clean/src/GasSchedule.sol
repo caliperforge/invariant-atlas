@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.28;
 
-/// @title GasSchedule - Taiko execution-layer mirror for the L1 gas schedule.
+/// @title GasSchedule (CLEAN twin) - Taiko execution-layer mirror for the L1 gas schedule.
 ///
 /// Type-1 Ethereum-equivalence requires that the rollup charge L1's exact
 /// gas costs for every opcode. The Atlas models the gas schedule as an
@@ -25,19 +25,20 @@ pragma solidity 0.8.28;
 /// Reference: EIP-2929 (Gas cost increases for state access opcodes),
 /// EIP-3529 (Reduction in refunds). Cited in README.
 contract GasSchedule {
-    /// @notice Per-EIP-2929 §Specification: COLD_SLOAD_COST.
+    // CLEAN: post-EIP-2929 cold-SLOAD = 2100 (per EIP-2929 §Specification:
+    // COLD_SLOAD_COST). A shim that forks its constants table off an older
+    // spec snapshot and forgets the EIP-2929 uplift silently under-charges
+    // every storage read - the canonical bug class this mirror catches.
     uint256 internal constant L1_COLD_SLOAD_COST = 2100;
     /// @notice Per-EIP-2929 §Specification: WARM_STORAGE_READ_COST.
     uint256 internal constant L1_WARM_SLOAD_COST = 100;
 
     /// @notice Mirror the canonical L1 cold-SLOAD gas cost.
-    /// @dev Clean leg: returns 2100, byte-equivalent to L1 post-EIP-2929.
     function coldSloadCost() external pure returns (uint256) {
         return L1_COLD_SLOAD_COST;
     }
 
     /// @notice Mirror the canonical L1 warm-SLOAD gas cost.
-    /// @dev Clean leg: returns 100, byte-equivalent to L1 post-EIP-2929.
     function warmSloadCost() external pure returns (uint256) {
         return L1_WARM_SLOAD_COST;
     }

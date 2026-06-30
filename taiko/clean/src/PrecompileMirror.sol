@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.28;
 
-/// @title PrecompileMirror - Taiko execution-layer mirror for canonical L1 precompiles.
+/// @title PrecompileMirror (CLEAN twin) - Taiko execution-layer mirror for canonical L1 precompiles.
 ///
 /// Type-1 Ethereum-equivalence requires that the rollup execution client
 /// return byte-identical output to L1 for every precompile invocation on
@@ -27,15 +27,14 @@ contract PrecompileMirror {
 
     /// @notice Mirror SHA256(input) the way a Type-1 rollup execution
     ///         client must: byte-identical output to L1.
-    /// @dev Clean leg: pass through to precompile `0x02` and return its
-    ///      32-byte output verbatim. No truncation, no padding, no
-    ///      transformation. The byte string returned MUST be the same
-    ///      bytes a contemporaneous L1 client would return for the same
-    ///      input.
     function sha256Mirrored(bytes memory input) external view returns (bytes32 out) {
         (bool ok, bytes memory ret) = SHA256_PRECOMPILE.staticcall(input);
         require(ok, "sha256 precompile call failed");
         require(ret.length == 32, "sha256 precompile MUST return 32 bytes");
+        // CLEAN: pass the precompile output through verbatim. No truncation,
+        // no padding, no transformation. The byte string returned MUST be
+        // the same bytes a contemporaneous L1 client would return for the
+        // same input.
         out = bytes32(ret);
     }
 }

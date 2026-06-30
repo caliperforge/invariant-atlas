@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.28;
 
-/// @title BasedSequencer - Taiko based-sequencing ordering mirror.
+/// @title BasedSequencer (CLEAN twin) - Taiko based-sequencing ordering mirror.
 ///
 /// Taiko's based-sequencing rule: L2 blocks land in proposal order. The
 /// proposer is whoever included the L2 block on L1 first, and the prover
@@ -41,10 +41,13 @@ contract BasedSequencer {
 
     /// @notice Finalize the inclusion list. Returns the canonical order
     ///         the prover MUST attest to.
-    /// @dev Clean leg: returns the queue verbatim - insertion order.
     function finalize() external returns (bytes32[] memory order) {
         require(!finalized, "already finalized");
         finalized = true;
+        // CLEAN: return the queue in insertion order. An honest based
+        // proposer MUST NOT reorder; the prover attests to the queue as
+        // proposed. Sorting by priority fee would be the canonical
+        // "sequencer reorder for MEV" violation.
         order = new bytes32[](queue.length);
         for (uint256 i = 0; i < queue.length; i++) {
             order[i] = queue[i].txHash;

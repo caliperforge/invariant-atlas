@@ -1,12 +1,12 @@
-# Atlas taiko/ subdir, CLEAN twin Foundry config.
+# Atlas taiko/ subdir Foundry config.
 #
-# Shared toolchain config across taiko/clean/ and taiko/planted/; the
-# line-1 CLEAN/PLANTED label above is the only header difference. Only
-# the three Taiko execution-mirror source files under src/ differ
-# between the twins; the test surface does not change. Same shape as
-# cases/07 and v4-hooks/{clean,planted}: solc 0.8.28, forge-std v1.9.4
-# (symlinked in lib/ from case 07 for offline reproducibility),
-# invariant runner sized for a CI-friendly campaign.
+# Shared toolchain config across taiko/clean/ and taiko/planted/ - this
+# file is byte-identical between the two twins. Only the three Taiko
+# execution-mirror source files under src/ differ between the twins; the
+# test surface does not change. Same shape as cases/07 and
+# v4-hooks/{clean,planted}: solc 0.8.28, forge-std v1.9.4 (symlinked in
+# lib/ from case 07 for offline reproducibility), invariant runner sized
+# for a CI-friendly campaign.
 
 [profile.default]
 src = "src"
