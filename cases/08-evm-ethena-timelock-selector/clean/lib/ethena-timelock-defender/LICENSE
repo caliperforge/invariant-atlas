@@ -1,0 +1,46 @@
+MIT License
+
+The vendored file `src/EthenaTimelockController.sol` carries an in-file
+SPDX identifier `// SPDX-License-Identifier: MIT` (see line 1 of the
+source). It is copied byte-identical from Guardian Audits' public
+`EthenaTimelockDefender` repository:
+
+  https://github.com/GuardianAudits/EthenaTimelockDefender
+
+at path `src/EthenaTimelockController.sol`, `main` branch, as of
+2026-07-06. The MIT SPDX header on the file is the load-bearing license
+grant per Solidity SPDX convention; downstream vendors of an
+SPDX-labeled MIT source file rely on that header. Guardian's upstream
+repository does not carry a top-level LICENSE file — the file-header
+identifier is the authoritative claim.
+
+The upstream contract itself was authored by the Ethena team; PR#4 to
+the (private) `ethena-labs/timelock-contract` repository added the
+`_extractSelector` helper this file carries. Guardian's public
+`EthenaTimelockDefender` repository publishes the post-fix source
+alongside a fuzz-defender test suite Guardian authored during the
+2025-05-26 audit engagement.
+
+This vendored copy is NOT MODIFIED. The Atlas case's planted twin does
+NOT mutate this file; the twin diff lives in `../src/`.
+
+MIT License terms:
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

@@ -1,0 +1,3 @@
+forge-std/=lib/forge-std/src/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+ethena-timelock-defender/=lib/ethena-timelock-defender/src/

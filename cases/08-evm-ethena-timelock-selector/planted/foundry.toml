@@ -1,0 +1,58 @@
+# Atlas case 8 — CLEAN twin Foundry config.
+#
+# Byte-identical between cases/08-evm-ethena-timelock-selector/clean/ and
+# cases/08-evm-ethena-timelock-selector/planted/. Only src/G1EthenaTimelockHarness.sol
+# differs between the two twins; the vendored EthenaTimelockController source
+# (lib/ethena-timelock-defender/src/EthenaTimelockController.sol) stays
+# byte-identical across both trees, the toolchain config and the test surface
+# do not change either.
+#
+# solc 0.8.26 matches Ethena's own pragma on EthenaTimelockController.sol
+# (a hard pin, not preference — the vendored source declares
+# `pragma solidity 0.8.26;`). This differs from cases 6 + 7 (which used 0.8.28)
+# for the load-bearing reason: the vendor's pragma.
+#
+# Runtime deps (installed at CI time via forge install, --no-git, into lib/):
+#   - foundry-rs/forge-std@v1.9.4
+#   - OpenZeppelin/openzeppelin-contracts@v5.0.2
+#     (Ethena's EthenaTimelockController inherits OZ v5's TimelockController +
+#      ReentrancyGuard; v5.0.2 supports pragma ^0.8.20 which admits 0.8.26.)
+#
+# `lib/ethena-timelock-defender/src/EthenaTimelockController.sol` is committed
+# as a vendored file — Guardian's `EthenaTimelockDefender` repo is not a
+# Foundry package (no foundry.toml / no `forge install`-ready layout), so
+# committing the vendored file is the cleanest reproduction path. LICENSE +
+# NOTICE ride alongside in lib/ethena-timelock-defender/.
+
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+
+solc_version = "0.8.26"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+
+remappings = [
+    "forge-std/=lib/forge-std/src/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "ethena-timelock-defender/=lib/ethena-timelock-defender/src/",
+]
+
+ffi = false
+gas_limit = 9223372036854775807
+memory_limit = 2147483648
+
+[fuzz]
+runs = 256
+
+[invariant]
+runs = 256
+depth = 50
+fail_on_revert = false
+call_override = false
+dictionary_weight = 80
+include_storage = true
+include_push_bytes = true

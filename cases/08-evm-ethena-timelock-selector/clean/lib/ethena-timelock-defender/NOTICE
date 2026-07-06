@@ -1,0 +1,41 @@
+Ethena Timelock Defender — vendored source
+==========================================
+
+Source: https://github.com/GuardianAudits/EthenaTimelockDefender
+File:   src/EthenaTimelockController.sol
+Branch: main
+Fetched: 2026-07-06
+
+The `src/EthenaTimelockController.sol` file in this directory is a
+byte-identical copy of Guardian Audits' public post-fix vendored source.
+It is provided under the MIT license per the SPDX identifier at the
+top of the file. See LICENSE in this directory for the license text
+and the vendoring rationale.
+
+Attributions:
+
+- **Authors of the contract:** the Ethena team. The `_extractSelector`
+  helper the file carries was added to the (private)
+  `ethena-labs/timelock-contract` repository as PR#4, in response to
+  Guardian's 2025-05-26 audit finding M-01 "Native Asset Transfers
+  Always Revert." The Ethena upstream repository is not publicly
+  reachable (returns 404 as of 2026-07-06); the fix's provenance
+  therefore rides on (a) Guardian's public audit report's explicit
+  PR#4 attribution and pre-fix code quotation, and (b) this vendored
+  post-fix source. This is the same structural shape as the Atlas's
+  C-P1 case (subclass the auditor's public post-fix).
+
+- **Public vendoring:** Guardian Audits, in the
+  `EthenaTimelockDefender` repository. Guardian published the
+  post-fix source alongside a Guardian-authored fuzz-defender test
+  suite as part of the audit engagement follow-up.
+
+- **Audit report:**
+  https://github.com/GuardianAudits/Audits/blob/main/Ethena/2025-05-26_Ethena_TimelockController.pdf
+  Finding M-01 "Native Asset Transfers Always Revert" at page 12.
+  Category: Logical Error. Severity: Medium. Status: Resolved.
+
+This vendored copy is NOT MODIFIED. The Atlas case's planted twin
+(`../../../planted/`) does NOT mutate this file; it lives at the same
+path in the planted tree, byte-identical, and the pre-fix defect is
+reproduced in the planted twin's harness contract at `../../src/`.

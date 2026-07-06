@@ -199,11 +199,15 @@ jobs:
       matrix:
         # Every EVM case lists itself here. Case 6 is the Trace2Inv-bridge
         # access-control case (the canon hand-shake, NOT a competitive
-        # entry — see cases/06-evm-access-control/README.md §1). The
-        # stretch case C7 (Trace2Inv arithmetic class) appends here if /
-        # when greenlit per spec §3.4.
+        # entry — see cases/06-evm-access-control/README.md §1). Case 8
+        # covers Guardian audit M-01 on Ethena TimelockController
+        # (selector-extraction integrity — 2025-05-26 Medium; see
+        # cases/08-evm-ethena-timelock-selector/README.md). Case 8 also
+        # requires OpenZeppelin v5 as an install-at-CI-time dep (the
+        # vendored Guardian contract inherits OZ v5's TimelockController).
         case:
           - 06-evm-access-control
+          - 08-evm-ethena-timelock-selector
         leg:
           - clean
           - planted
@@ -222,6 +226,19 @@ jobs:
           # local-reproduction command in the case README and works under
           # foundry >= 1.0.
           forge install foundry-rs/forge-std@${{ env.FORGE_STD_VERSION }} --no-git
+
+      - name: Install openzeppelin-contracts v5.0.2 (case 8 only)
+        if: matrix.case == '08-evm-ethena-timelock-selector'
+        working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}
+        run: |
+          # Case 8 subclasses Guardian's vendored EthenaTimelockController
+          # (lib/ethena-timelock-defender/src/EthenaTimelockController.sol),
+          # which imports @openzeppelin/contracts/governance/TimelockController.sol
+          # and @openzeppelin/contracts/utils/ReentrancyGuard.sol at the
+          # Solidity 0.8.26 pragma. OZ v5.0.2 supports pragma ^0.8.20 and
+          # covers those import paths. `--no-git` keeps the install
+          # aligned with the same install-at-CI-time pattern as forge-std.
+          forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 --no-git
 
       - name: forge build (${{ matrix.case }} / ${{ matrix.leg }})
         working-directory: cases/${{ matrix.case }}/${{ matrix.leg }}

@@ -6,7 +6,7 @@ A cross-VM, defender-side, pre-deploy CI benchmark: for each historical exploit,
 a runnable invariant property and a same-source twin where the property *would
 have* caught the bug class on the pre-exploit code under CI run.
 
-**Status:** v0.1 shipped — all six cases land across Cairo, Move, Solana, and
+**Status:** v0.1 shipped — seven cases land across Cairo, Move, Solana, and
 EVM, each with both CI legs asserted (clean passes / planted fires). The
 [`v4-hooks/`](v4-hooks/) subdir (Uniswap Foundation Security grant lane, three
 hook-class invariants H1/H2/H3) is also in the matrix as `v4-hooks-cases`.
@@ -42,6 +42,7 @@ appendix."
 | **C4** | Solana | [Mango Markets](cases/04-solana-mango/) | Oct 2022 | ~$117M | oracle freshness + price-sanity bound | **shipped** |
 | **C5** | Solana | [Loopscale](cases/05-solana-loopscale/) | Apr 2025 | ~$5.8M | collateral-valuation oracle bound | **shipped** |
 | **C6** | EVM (bridge) | [Trace2Inv-set, access-control class](cases/06-evm-access-control/) | Aug 2021 (representative) | ~$8.9M (Punk Protocol representative) | privileged-function authorization | **shipped** |
+| **C8** | EVM | [Guardian M-01 — Ethena TimelockController](cases/08-evm-ethena-timelock-selector/) | May 2025 (found; Ethena PR#4) | n/a (audit-caught, pre-mainnet) | governance-tier spec-violation on whitelisted-executor timelock path (logical error / selector extraction; whitelisted native transfer unreachable) | **shipped** |
 
 ## How each case is structured
 

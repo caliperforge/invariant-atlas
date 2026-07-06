@@ -25,6 +25,32 @@
 **/lib/
 **/broadcast/
 
+# Case 8 vendors Guardian's EthenaTimelockController.sol under the case's
+# lib/ tree because Guardian's `EthenaTimelockDefender` repo is not a
+# Foundry package (no foundry.toml / no `forge install`-ready layout).
+# The vendored source, its LICENSE, and its NOTICE must ship in-tree so
+# fresh-clone CI compiles. Un-ignore that specific sub-path, then
+# explicitly re-ignore the `forge install --no-git` install targets so
+# they never sneak into a commit under case 8's lib/.
+!cases/08-evm-ethena-timelock-selector/clean/lib/
+!cases/08-evm-ethena-timelock-selector/clean/lib/ethena-timelock-defender/
+!cases/08-evm-ethena-timelock-selector/clean/lib/ethena-timelock-defender/**
+!cases/08-evm-ethena-timelock-selector/planted/lib/
+!cases/08-evm-ethena-timelock-selector/planted/lib/ethena-timelock-defender/
+!cases/08-evm-ethena-timelock-selector/planted/lib/ethena-timelock-defender/**
+cases/08-evm-ethena-timelock-selector/clean/lib/forge-std/
+cases/08-evm-ethena-timelock-selector/clean/lib/openzeppelin-contracts/
+cases/08-evm-ethena-timelock-selector/planted/lib/forge-std/
+cases/08-evm-ethena-timelock-selector/planted/lib/openzeppelin-contracts/
+
+# Top-level `lib/` holds reviewer-reference submodules (Guardian's
+# EthenaTimelockDefender @ main, OpenZeppelin contracts v5.x). Submodule
+# gitlinks are tracked via .gitmodules regardless, but un-ignoring the
+# path keeps `git status` clean and lets a `--recursive` clone populate
+# the working tree without noise.
+!/lib/
+!/lib/**
+
 # Move / Sui build artifacts. Each Move case's clean/ and planted/ is a
 # full Sui Move package; running `sui move build` and `sui move test`
 # locally produces build/ and Move.lock under the case dir. Same
