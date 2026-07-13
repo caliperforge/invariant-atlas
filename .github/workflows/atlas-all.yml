@@ -604,3 +604,60 @@ jobs:
         with:
           name: cargo-sbf-out-${{ matrix.case }}-${{ matrix.leg }}
           path: ci-out/${{ matrix.case }}-${{ matrix.leg }}.out
+
+  # Phase 2 - multi-seed reachability certification (standing merge gate).
+  # For every EVM planted case in the Atlas, the planted twin must FAIL with
+  # an INVARIANT VIOLATED marker on ALL 16 canonical seeds in
+  # ci/reachability_seeds.txt. Turns the per-case matrix's one-seed catches
+  # into a deterministic N-of-N certification per case. Non-EVM cases (Cairo,
+  # Move, Solana) are NOT covered by this leg; per-ecosystem reachability
+  # harnesses are queued separately (see docs/reachability.md).
+  evm-cases-reachability-multi-seed:
+    name: Atlas reachability (EVM) - ${{ matrix.case }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        # EVM planted twins by dir + label. Case 8 also installs OZ v5.0.2
+        # via the same install-at-CI-time pattern used by evm-cases above.
+        include:
+          - case: 06-evm-access-control
+            case_dir: cases/06-evm-access-control/planted
+            label: case-06 access-control
+            install_oz: false
+          - case: 08-evm-ethena-timelock-selector
+            case_dir: cases/08-evm-ethena-timelock-selector/planted
+            label: case-08 ethena-timelock-selector
+            install_oz: true
+          - case: v4-hooks
+            case_dir: v4-hooks/planted
+            label: v4-hooks
+            install_oz: false
+          - case: taiko
+            case_dir: taiko/planted
+            label: taiko
+            install_oz: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-foundry
+        with:
+          forge-std-version: ${{ env.FORGE_STD_VERSION }}
+
+      - name: Install forge-std (${{ env.FORGE_STD_VERSION }})
+        working-directory: ${{ matrix.case_dir }}
+        run: |
+          forge install foundry-rs/forge-std@${{ env.FORGE_STD_VERSION }} --no-git
+
+      - name: Install openzeppelin-contracts v5.0.2 (case 8 only)
+        if: matrix.install_oz == true
+        working-directory: ${{ matrix.case_dir }}
+        run: |
+          forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 --no-git
+
+      - name: forge build (${{ matrix.case }})
+        working-directory: ${{ matrix.case_dir }}
+        run: forge build
+
+      - name: Reachability certified across 16 seeds
+        run: ./ci/reachability_leg.sh --case-dir "${{ matrix.case_dir }}" --label "${{ matrix.label }}"

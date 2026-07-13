@@ -77,6 +77,26 @@ A `nightly.yml` cron runs the matrix daily so an upstream toolchain release
 (scarb / snforge / anchor / foundry / move) surfaces as a red badge the
 morning it lands, not when the next contributor stumbles on it.
 
+Every EVM planted case (06 access-control, 08 ethena-timelock-selector,
+v4-hooks, taiko) is also certified on a fixed 16-seed set as a standing
+merge gate (`evm-cases-reachability-multi-seed` matrix job). Every seed
+must FAIL the case's planted project with an `INVARIANT VIOLATED`
+marker; if any seed passes on any EVM case, that case's matrix cell
+turns red. Verdict from the local run on 2026-07-13, at the standing
+`foundry.toml [invariant]` budget (`runs = 256`, `depth = 50`):
+
+```
+case 06 access-control              16 / 16
+case 08 ethena-timelock-selector    16 / 16
+v4-hooks                            16 / 16
+taiko                               16 / 16
+```
+
+The Cairo, Move and Solana cases are not yet covered by this leg;
+per-ecosystem reachability harnesses are queued. See
+[`docs/reachability.md`](docs/reachability.md) for the k / N table,
+the merge-gate rule, and the non-EVM caveat.
+
 ## Running case 1 locally
 
 Requires `scarb 2.18.0` and `snforge 0.60.x` or `0.61.x`.
