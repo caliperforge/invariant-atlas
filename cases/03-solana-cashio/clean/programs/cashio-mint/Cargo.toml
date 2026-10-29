@@ -26,3 +26,18 @@ default = []
 [dependencies]
 anchor-lang = "=1.0.1"
 anchor-spl = { version = "=1.0.1", features = ["token"] }
+
+# anchor-lang 1.0.1 depends on its macro crates with caret ranges, so a
+# fresh resolve pulls 1.2.x macros whose generated code calls
+# system_program::create_account_allow_prefund, absent from 1.0.1.
+# Lockfiles are gitignored repo-wide, so hold the macro crates here.
+anchor-attribute-access-control = "=1.0.1"
+anchor-attribute-account = "=1.0.1"
+anchor-attribute-constant = "=1.0.1"
+anchor-attribute-error = "=1.0.1"
+anchor-attribute-event = "=1.0.1"
+anchor-attribute-program = "=1.0.1"
+anchor-derive-accounts = "=1.0.1"
+anchor-derive-serde = "=1.0.1"
+anchor-derive-space = "=1.0.1"
+anchor-syn = "=1.0.1"
